@@ -2,179 +2,244 @@
   <div id="app">
     <div>Chose X or 0</div>
     <div>
-      <input type="radio" id="X" name="age" value="X" v-model="play" />
+      <input type="radio" id="X" name="player" value="x" v-model="player" />
       <label for="X">X</label>
     </div>
     <div>
-      <input type="radio" id="O" name="age" value="O" v-model="play" />
+      <input type="radio" id="O" name="player" value="o" v-model="player" />
       <label for="O">O</label>
     </div>
 
-    <div ref="game" class="game">
-      <div v-for="(block) in blocks" :key="block.key">
-        <Block @go="handleGo(block.key)" :block-info="block" />
+    <div class="game" :class="{'game-ended': gameEnded}">
+      <div v-for="block in blocks" :key="block.key">
+        <div
+          class="block"
+          :class="{ taken: block.taken, winner: block.winner }"
+          @click="handleGo(block.key)"
+        >
+          <span> {{ block.value }} </span>
+        </div>
       </div>
     </div>
-    <div v-if="winner">
-      {{ winner }} won
+    <div v-if="gameEnded">
+      <div v-if="winner">
+        {{ winner }} won
+      </div>
+      <div v-if="gameEnded && !winner">
+        Draw
+      </div>
+      <button @click="clearGame">Play again</button>
     </div>
   </div>
 </template>
 
 <script>
-import Block from "./components/Block.vue";
-
 export default {
   name: "App",
   data() {
     return {
-      play: "x",
-      playBot: "o",
+      player: "x",
       blocks: [
         {
-          value: '',
+          value: "",
           key: 0,
           taken: false,
           winner: false,
-          row: 'r1',
-          col: 'c1',
-          diag: 'd1'
         },
         {
-          value: '',
+          value: "",
           key: 1,
           taken: false,
           winner: false,
-          row: 'r1',
-          col: 'c2'
         },
         {
-          value: '',
+          value: "",
           key: 2,
           taken: false,
           winner: false,
-          row: 'r1',
-          col: 'c3',
-          diag: 'd2'
         },
         {
-          value: '',
+          value: "",
           key: 3,
           taken: false,
           winner: false,
-          row: 'r2',
-          col: 'c1'
         },
         {
-          value: '',
+          value: "",
           key: 4,
           taken: false,
           winner: false,
-          row: 'r2',
-          col: 'c2',
-          diag: ['d1', 'd2']
         },
         {
-          value: '',
+          value: "",
           key: 5,
           taken: false,
           winner: false,
-          row: 'r2',
-          col: 'c3'
         },
         {
-          value: '',
+          value: "",
           key: 6,
           taken: false,
           winner: false,
-          row: 'r3',
-          col: 'c1',
-          diag: 'd2'
         },
         {
-          value: '',
+          value: "",
           key: 7,
           taken: false,
           winner: false,
-          row: 'r3',
-          col: 'c2'
         },
         {
-          value: '',
+          value: "",
           key: 8,
           taken: false,
           winner: false,
-          row: 'r3',
-          col: 'c3',
-          diag: 'd1'
         },
       ],
       filled: {
         x: [],
-        o: []
+        o: [],
       },
-      winner: false
+      winner: false,
     };
   },
-  mounted() {
-    
-  },
+  mounted() {},
   computed: {
     emptyBlocks() {
-      return this.blocks.filter(block => {
-        return !block.taken
-      })
+      return this.blocks.filter((block) => {
+        return !block.taken;
+      });
     },
-   
+    playerBot() {
+      return this.player === "x" ? "o" : "x";
+    },
+    gameEnded() {
+      return this.winner || !this.emptyBlocks.length
+    }
   },
-  components: {
-    Block,
+  watch: {
+    player(val) {
+      this.clearGame()
+      if (val === 'o') {
+        this.goBot()
+      }
+    }
   },
   methods: {
+    markWinner(player, arrKeys) {
+      this.winner = player;
+      this.blocks = this.blocks.map((b) => {
+        if (arrKeys.includes(b.key)) {
+          b.winner = true;
+        }
+        return b;
+      });
+    },
     checkWinner(player) {
-      const length = this.filled[player].length
-      console.log(this.filled[player].flat())
-      //const arrFlatted = this.filled[player].flat()
-      const unique = new Set(this.filled[player].flat()).size
+      const arr = this.filled[player];
 
-      console.log('u',unique)
-
-      let diff = length - unique
-      if (diff === 3) {
-        this.winner = player
+      if (arr.includes(0) && arr.includes(1) && arr.includes(2)) {
+        this.markWinner(player, [0, 1, 2]);
+      } else if (arr.includes(3) && arr.includes(4) && arr.includes(5)) {
+        this.markWinner(player, [3, 4, 5]);
+      } else if (arr.includes(6) && arr.includes(7) && arr.includes(8)) {
+        this.markWinner(player, [6, 7, 8]);
+      } else if (arr.includes(0) && arr.includes(3) && arr.includes(6)) {
+        this.markWinner(player, [0, 3, 6]);
+      } else if (arr.includes(1) && arr.includes(4) && arr.includes(7)) {
+        this.markWinner(player, [1, 4, 7]);
+      } else if (arr.includes(2) && arr.includes(5) && arr.includes(8)) {
+        this.markWinner(player, [2, 5, 8]);
+      } else if (arr.includes(0) && arr.includes(4) && arr.includes(8)) {
+        this.markWinner(player, [0, 4, 8]);
+      } else if (arr.includes(2) && arr.includes(4) && arr.includes(6)) {
+        this.markWinner(player, [2, 4, 6]);
       }
     },
     handleGo(index) {
-      this.blocks[index].value = this.play;
+      if (this.blocks[index].taken) return;
+      this.blocks[index].value = this.player;
       this.blocks[index].taken = true;
 
-      this.filled[this.play].push(this.blocks[index].row)
-      this.filled[this.play].push(this.blocks[index].col)
-      if (this.blocks[index].diag) {
-        this.filled[this.play].push(this.blocks[index].diag)
-      }
-      this.checkWinner(this.play)
-      
-      
+      this.filled[this.player].push(this.blocks[index].key);
+      this.checkWinner(this.player);
 
-      setTimeout(() => {
-        this.goBot()
-      }, 1000)
-      
+      if (this.winner) return;
+
+      this.goBot();
     },
     goBot() {
+      if (!this.emptyBlocks.length) return
       let number = Math.floor(Math.random() * this.emptyBlocks.length);
-      console.log('numb', number)
-      let available = this.emptyBlocks[number].key
-      console.log('av', this.emptyBlocks[number])
-      this.checkWinner(this.playBot)
-
-     
-      this.blocks[available].value = this.playBot;
+      let available = this.emptyBlocks[number].key;
+      this.filled[this.playerBot].push(this.blocks[available].key);
+      this.checkWinner(this.playerBot);
+      this.blocks[available].value = this.playerBot;
       this.blocks[available].taken = true;
+    },
+    clearGame() {
+      this.blocks = [
+        {
+          value: "",
+          key: 0,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 1,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 2,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 3,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 4,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 5,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 6,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 7,
+          taken: false,
+          winner: false,
+        },
+        {
+          value: "",
+          key: 8,
+          taken: false,
+          winner: false,
+        },
+      ]
+      this.filled = {
+        x: [],
+        o: [],
+      }
+      this.winner = false
     }
   },
-
 };
 </script>
 
@@ -190,8 +255,30 @@ export default {
 .game {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  width: 160px;
-  height: 160px;
+  width: 185px;
+  height: 185px;
   margin: 0 auto;
+}
+.game-ended {
+  position: relative;
+  z-index: -1;
+}
+.block {
+  border: 1px solid black;
+  margin: 5px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  font-size: 30px;
+}
+.taken {
+  background-color: rgba(0, 0, 0, 0.4);
+  cursor: not-allowed;
+}
+.winner {
+  background-color: #90ee90;
 }
 </style>
